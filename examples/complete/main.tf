@@ -23,6 +23,9 @@ module "firewall" {
     private_ip_ranges = ["IANAPrivateRanges"]
   }
 
+  enable_forced_tunneling                   = true
+  firewall_management_subnet_address_prefix = ["10.1.6.0/26"]
+
   public_ip_names = ["fw-public", "fw-private"]
 
   # (Optional) To enable the availability zones for firewall. 

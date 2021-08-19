@@ -51,6 +51,17 @@ resource "azurerm_subnet" "fw-snet" {
   service_endpoints    = var.firewall_service_endpoints
 }
 
+#---------------------------------------------------------
+# Firewall Managemnet Subnet Creation
+#----------------------------------------------------------
+resource "azurerm_subnet" "fw-mgnt-snet" {
+  count                = var.enable_forced_tunneling ? 1 : 0
+  name                 = "AzureFirewallManagementSubnet"
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = var.virtual_network_name
+  address_prefixes     = var.firewall_management_subnet_address_prefix #[cidrsubnet(element(var.vnet_address_space, 0), 10, 0)]
+}
+
 #------------------------------------------
 # Public IP resources for Azure Firewall
 #------------------------------------------
@@ -71,6 +82,16 @@ resource "azurerm_public_ip" "fw-pip" {
   sku                 = "Standard"
   public_ip_prefix_id = azurerm_public_ip_prefix.fw-pref.id
   tags                = merge({ "ResourceName" = lower("pip-${var.firewall_config.name}-${each.key}") }, var.tags, )
+}
+
+resource "azurerm_public_ip" "fw-mgnt-pip" {
+  count               = var.enable_forced_tunneling ? 1 : 0
+  name                = lower("pip-${var.firewall_config.name}-fw-mgnt")
+  location            = local.location
+  resource_group_name = local.resource_group_name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = merge({ "ResourceName" = lower("pip-${var.firewall_config.name}-fw-mgnt") }, var.tags, )
 }
 
 #-----------------
@@ -96,6 +117,23 @@ resource "azurerm_firewall" "fw" {
       name                 = ip.key
       subnet_id            = ip.key == var.public_ip_names[0] ? azurerm_subnet.fw-snet.id : null
       public_ip_address_id = azurerm_public_ip.fw-pip[ip.key].id
+    }
+  }
+
+  dynamic "management_ip_configuration" {
+    for_each = var.enable_forced_tunneling ? [1] : []
+    content {
+      name                 = lower("${var.firewall_config.name}-forced-tunnel")
+      subnet_id            = azurerm_subnet.fw-mgnt-snet.0.id
+      public_ip_address_id = azurerm_public_ip.fw-mgnt-pip.0.id
+    }
+  }
+
+  dynamic "virtual_hub" {
+    for_each = var.virtual_hub != null ? [var.virtual_hub] : []
+    content {
+      virtual_hub_id  = virtual_hub.value.virtual_hub_id
+      public_ip_count = virtual_hub.value.public_ip_count
     }
   }
 }

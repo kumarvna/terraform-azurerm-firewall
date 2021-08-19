@@ -66,6 +66,20 @@ variable "firewall_config" {
   })
 }
 
+variable "enable_forced_tunneling" {
+  description = "Route all Internet-bound traffic to a designated next hop instead of going directly to the Internet"
+  default     = false
+}
+
+variable "virtual_hub" {
+  description = "An Azure Virtual WAN Hub with associated security and routing policies configured by Azure Firewall Manager. Use secured virtual hubs to easily create hub-and-spoke and transitive architectures with native security services for traffic governance and protection."
+  type = object({
+    virtual_hub_id  = string
+    public_ip_count = number
+  })
+  default = null
+}
+
 variable "firewall_application_rules" {
   description = "List of application rules to apply to firewall."
   type        = list(object({ name = string, action = string, source_addresses = list(string), target_fqdns = list(string), protocol = object({ type = string, port = string }) }))
