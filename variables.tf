@@ -82,20 +82,51 @@ variable "virtual_hub" {
 
 variable "firewall_application_rules" {
   description = "List of application rules to apply to firewall."
-  type        = list(object({ name = string, action = string, source_addresses = list(string), target_fqdns = list(string), protocol = object({ type = string, port = string }) }))
-  default     = []
+  type = list(object({
+    name             = string
+    description      = optional(string)
+    action           = string
+    source_addresses = optional(list(string))
+    source_ip_groups = optional(list(string))
+    fqdn_tags        = optional(list(string))
+    target_fqdns     = optional(list(string))
+    protocol = optional(object({
+      type = string
+      port = string
+    }))
+  }))
+  default = []
 }
 
 variable "firewall_network_rules" {
   description = "List of network rules to apply to firewall."
-  type        = list(object({ name = string, action = string, source_addresses = list(string), destination_ports = list(string), destination_addresses = list(string), protocols = list(string) }))
-  default     = []
+  type = list(object({
+    name                  = string
+    description           = optional(string)
+    action                = string
+    source_addresses      = optional(list(string))
+    destination_ports     = list(string)
+    destination_addresses = optional(list(string))
+    destination_fqdns     = optional(list(string))
+    protocols             = list(string)
+  }))
+  default = []
 }
 
 variable "firewall_nat_rules" {
   description = "List of nat rules to apply to firewall."
-  type        = list(object({ name = string, action = string, source_addresses = list(string), destination_ports = list(string), destination_addresses = list(string), protocols = list(string), translated_address = string, translated_port = string }))
-  default     = []
+  type = list(object({
+    name                  = string
+    description           = optional(string)
+    action                = string
+    source_addresses      = optional(list(string))
+    destination_ports     = list(string)
+    destination_addresses = list(string)
+    protocols             = list(string)
+    translated_address    = string
+    translated_port       = string
+  }))
+  default = []
 }
 
 variable "fw_pip_diag_logs" {
@@ -106,6 +137,16 @@ variable "fw_pip_diag_logs" {
 variable "fw_diag_logs" {
   description = "Firewall Monitoring Category details for Azure Diagnostic setting"
   default     = ["AzureFirewallApplicationRule", "AzureFirewallNetworkRule", "AzureFirewallDnsProxy"]
+}
+
+variable "log_analytics_workspace_name" {
+  description = "The name of log analytics workspace name"
+  default     = null
+}
+
+variable "storage_account_name" {
+  description = "The name of the hub storage account to store logs"
+  default     = null
 }
 
 variable "tags" {

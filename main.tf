@@ -40,6 +40,18 @@ resource "azurerm_resource_group" "rg" {
   tags     = merge({ "ResourceName" = format("%s", var.resource_group_name) }, var.tags, )
 }
 
+data "azurerm_log_analytics_workspace" "logws" {
+  count               = var.log_analytics_workspace_name != null ? 1 : 0
+  name                = var.log_analytics_workspace_name
+  resource_group_name = local.resource_group_name
+}
+
+data "azurerm_storage_account" "storeacc" {
+  count               = var.storage_account_name != null ? 1 : 0
+  name                = var.storage_account_name
+  resource_group_name = local.resource_group_name
+}
+
 #---------------------------------------------------------
 # Firewall Subnet Creation or selection
 #----------------------------------------------------------
@@ -138,13 +150,12 @@ resource "azurerm_firewall" "fw" {
   }
 }
 
-/* 
 #----------------------------------------------
 # Azure Firewall Network/Application/NAT Rules 
 #----------------------------------------------
 resource "azurerm_firewall_application_rule_collection" "fw_app" {
   for_each            = local.fw_application_rules
-  name                = lower(format("fw-app-rule-%s-${var.hub_vnet_name}-${local.location}", each.key))
+  name                = lower(format("fw-app-rule-%s-${var.firewall_config.name}-${local.location}", each.key))
   azure_firewall_name = azurerm_firewall.fw.name
   resource_group_name = local.resource_group_name
   priority            = 100 * (each.value.idx + 1)
@@ -152,7 +163,10 @@ resource "azurerm_firewall_application_rule_collection" "fw_app" {
 
   rule {
     name             = each.key
+    description      = each.value.rule.description
     source_addresses = each.value.rule.source_addresses
+    source_ip_groups = each.value.rule.source_ip_groups
+    fqdn_tags        = each.value.rule.fqdn_tags
     target_fqdns     = each.value.rule.target_fqdns
 
     protocol {
@@ -164,7 +178,7 @@ resource "azurerm_firewall_application_rule_collection" "fw_app" {
 
 resource "azurerm_firewall_network_rule_collection" "fw" {
   for_each            = local.fw_network_rules
-  name                = lower(format("fw-net-rule-%s-${var.hub_vnet_name}-${local.location}", each.key))
+  name                = lower(format("fw-net-rule-%s-${var.firewall_config.name}-${local.location}", each.key))
   azure_firewall_name = azurerm_firewall.fw.name
   resource_group_name = local.resource_group_name
   priority            = 100 * (each.value.idx + 1)
@@ -172,16 +186,18 @@ resource "azurerm_firewall_network_rule_collection" "fw" {
 
   rule {
     name                  = each.key
+    description           = each.value.rule.description
     source_addresses      = each.value.rule.source_addresses
     destination_ports     = each.value.rule.destination_ports
     destination_addresses = [for dest in each.value.rule.destination_addresses : contains(var.public_ip_names, dest) ? azurerm_public_ip.fw-pip[dest].ip_address : dest]
+    destination_fqdns     = each.value.rule.destination_fqdns
     protocols             = each.value.rule.protocols
   }
 }
 
 resource "azurerm_firewall_nat_rule_collection" "fw" {
   for_each            = local.fw_nat_rules
-  name                = lower(format("fw-nat-rule-%s-${var.hub_vnet_name}-${local.location}", each.key))
+  name                = lower(format("fw-nat-rule-%s-${var.firewall_config.name}-${local.location}", each.key))
   azure_firewall_name = azurerm_firewall.fw.name
   resource_group_name = local.resource_group_name
   priority            = 100 * (each.value.idx + 1)
@@ -189,6 +205,7 @@ resource "azurerm_firewall_nat_rule_collection" "fw" {
 
   rule {
     name                  = each.key
+    description           = each.value.rule.description
     source_addresses      = each.value.rule.source_addresses
     destination_ports     = each.value.rule.destination_ports
     destination_addresses = [for dest in each.value.rule.destination_addresses : contains(var.public_ip_names, dest) ? azurerm_public_ip.fw-pip[dest].ip_address : dest]
@@ -199,22 +216,24 @@ resource "azurerm_firewall_nat_rule_collection" "fw" {
 }
 
 #---------------------------------------------------------------
-# azurerm monitoring diagnostics - Firewall
+# azurerm monitoring diagnostics - Firewall and Public IP's
 #---------------------------------------------------------------
-resource "azurerm_monitor_diagnostic_setting" "fw-diag" {
-  name                       = lower("fw-${var.hub_vnet_name}-diag")
-  target_resource_id         = azurerm_firewall.fw.id
-  storage_account_id         = azurerm_storage_account.storeacc.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.logws.id
+resource "azurerm_monitor_diagnostic_setting" "fw-mgnt-pip-diag" {
+  count                      = var.log_analytics_workspace_name != null || var.storage_account_name != null && var.enable_forced_tunneling ? 1 : 0
+  name                       = lower("fw-${var.firewall_config.name}-mgnt-pip-diag")
+  target_resource_id         = azurerm_public_ip.fw-mgnt-pip.0.id
+  storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
 
   dynamic "log" {
-    for_each = var.fw_diag_logs
+    for_each = var.fw_pip_diag_logs
     content {
       category = log.value
       enabled  = true
 
       retention_policy {
         enabled = false
+        days    = 0
       }
     }
   }
@@ -224,7 +243,79 @@ resource "azurerm_monitor_diagnostic_setting" "fw-diag" {
 
     retention_policy {
       enabled = false
+      days    = 0
     }
   }
+
+  lifecycle {
+    ignore_changes = [log, metric]
+  }
 }
- */
+
+resource "azurerm_monitor_diagnostic_setting" "fw-pip-diag" {
+  for_each                   = local.public_ip_map
+  name                       = lower("fw-${var.firewall_config.name}-${each.key}-pip-diag")
+  target_resource_id         = azurerm_public_ip.fw-pip[each.key].id
+  storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
+
+  dynamic "log" {
+    for_each = var.fw_pip_diag_logs
+    content {
+      category = log.value
+      enabled  = true
+
+      retention_policy {
+        enabled = false
+        days    = 0
+      }
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+
+    retention_policy {
+      enabled = false
+      days    = 0
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [log, metric]
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "fw-diag" {
+  for_each                   = local.public_ip_map
+  name                       = lower("${var.firewall_config.name}-diag")
+  target_resource_id         = azurerm_firewall.fw.id
+  storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
+
+  dynamic "log" {
+    for_each = var.fw_diag_logs
+    content {
+      category = log.value
+      enabled  = true
+
+      retention_policy {
+        enabled = false
+        days    = 0
+      }
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+
+    retention_policy {
+      enabled = false
+      days    = 0
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [log, metric]
+  }
+}
