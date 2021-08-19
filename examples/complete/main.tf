@@ -32,7 +32,7 @@ module "firewall" {
   # Availability Zones can only be configured during deployment 
   # You can't modify an existing firewall to include Availability Zones
   #firewall_zones = [1, 2, 3]
-  /* 
+
   # (Optional) specify the application rules for Azure Firewall
   firewall_application_rules = [
     {
@@ -74,10 +74,10 @@ module "firewall" {
       protocols             = ["TCP", "UDP", ]
     },
   ]
- */
+
   # (Optional) To enable Azure Monitoring for Azure MySQL database
   # (Optional) Specify `storage_account_name` to save monitoring logs to storage. 
-  # log_analytics_workspace_name = "loganalytics-we-sharedtest2"
+  log_analytics_workspace_name = "loganalytics-we-sharedtest2"
 
   # Adding TAG's to your Azure resources 
   tags = {

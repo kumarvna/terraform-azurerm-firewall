@@ -253,7 +253,7 @@ resource "azurerm_monitor_diagnostic_setting" "fw-mgnt-pip-diag" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "fw-pip-diag" {
-  for_each                   = local.public_ip_map
+  for_each                   = { for pip in var.public_ip_names : pip => true if var.log_analytics_workspace_name != null || var.storage_account_name != null }
   name                       = lower("fw-${var.firewall_config.name}-${each.key}-pip-diag")
   target_resource_id         = azurerm_public_ip.fw-pip[each.key].id
   storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
@@ -287,7 +287,7 @@ resource "azurerm_monitor_diagnostic_setting" "fw-pip-diag" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "fw-diag" {
-  for_each                   = local.public_ip_map
+  count                      = var.log_analytics_workspace_name != null || var.storage_account_name != null ? 1 : 0
   name                       = lower("${var.firewall_config.name}-diag")
   target_resource_id         = azurerm_firewall.fw.id
   storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
