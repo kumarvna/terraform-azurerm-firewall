@@ -4,7 +4,6 @@
 locals {
   resource_group_name = element(coalescelist(data.azurerm_resource_group.rgrp.*.name, azurerm_resource_group.rg.*.name, [""]), 0)
   location            = element(coalescelist(data.azurerm_resource_group.rgrp.*.location, azurerm_resource_group.rg.*.location, [""]), 0)
-  if_ddos_enabled     = var.create_ddos_plan ? [{}] : []
   public_ip_map       = { for pip in var.public_ip_names : pip => true }
 
   fw_nat_rules = { for idx, rule in var.firewall_nat_rules : rule.name => {
@@ -41,49 +40,55 @@ resource "azurerm_resource_group" "rg" {
   tags     = merge({ "ResourceName" = format("%s", var.resource_group_name) }, var.tags, )
 }
 
+#---------------------------------------------------------
+# Firewall Subnet Creation or selection
+#----------------------------------------------------------
+resource "azurerm_subnet" "fw-snet" {
+  name                 = "AzureFirewallSubnet"
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = var.virtual_network_name
+  address_prefixes     = var.firewall_subnet_address_prefix #[cidrsubnet(element(var.vnet_address_space, 0), 10, 0)]
+  service_endpoints    = var.firewall_service_endpoints
+}
 
 #------------------------------------------
 # Public IP resources for Azure Firewall
 #------------------------------------------
-resource "random_string" "str" {
-  for_each = local.public_ip_map
-  length   = 6
-  special  = false
-  upper    = false
-  keepers = {
-    domain_name_label = each.key
-  }
-}
-
-resource "azurerm_public_ip_prefix" "pip_prefix" {
-  name                = lower("${var.hub_vnet_name}-pip-prefix")
-  location            = local.location
+resource "azurerm_public_ip_prefix" "fw-pref" {
+  name                = lower("${var.firewall_config.name}-pip-prefix")
   resource_group_name = local.resource_group_name
-  prefix_length       = 30
-  tags                = merge({ "ResourceName" = lower("${var.hub_vnet_name}-pip-prefix") }, var.tags, )
+  location            = local.location
+  prefix_length       = var.public_ip_prefix_length
+  tags                = merge({ "ResourceName" = lower("${var.firewall_config.name}-pip-prefix") }, var.tags, )
 }
 
 resource "azurerm_public_ip" "fw-pip" {
   for_each            = local.public_ip_map
-  name                = lower("pip-${var.hub_vnet_name}-${each.key}-${local.location}")
+  name                = lower("pip-${var.firewall_config.name}-${each.key}")
   location            = local.location
   resource_group_name = local.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
-  public_ip_prefix_id = azurerm_public_ip_prefix.pip_prefix.id
-  domain_name_label   = format("%s%s", lower(replace(each.key, "/[[:^alnum:]]/", "")), random_string.str[each.key].result)
-  tags                = merge({ "ResourceName" = lower("pip-${var.hub_vnet_name}-${each.key}-${local.location}") }, var.tags, )
+  public_ip_prefix_id = azurerm_public_ip_prefix.fw-pref.id
+  tags                = merge({ "ResourceName" = lower("pip-${var.firewall_config.name}-${each.key}") }, var.tags, )
 }
 
 #-----------------
 # Azure Firewall 
 #-----------------
 resource "azurerm_firewall" "fw" {
-  name                = lower("fw-${var.hub_vnet_name}-${local.location}")
-  location            = local.location
+  name                = format("%s", var.firewall_config.name)
   resource_group_name = local.resource_group_name
-  zones               = var.firewall_zones
-  tags                = merge({ "ResourceName" = lower("fw-${var.hub_vnet_name}-${local.location}") }, var.tags, )
+  location            = local.location
+  sku_name            = var.firewall_config.sku_name
+  sku_tier            = var.firewall_config.sku_tier
+  # firewall_policy_id = # firewall_policy resoruce to be added
+  dns_servers       = var.firewall_config.dns_servers
+  private_ip_ranges = var.firewall_config.private_ip_ranges
+  threat_intel_mode = lookup(var.firewall_config, "threat_intel_mode", "Alert")
+  zones             = var.firewall_config.zones
+  tags              = merge({ "ResourceName" = format("%s", var.firewall_config.name) }, var.tags, )
+
   dynamic "ip_configuration" {
     for_each = local.public_ip_map
     iterator = ip
@@ -95,6 +100,7 @@ resource "azurerm_firewall" "fw" {
   }
 }
 
+/* 
 #----------------------------------------------
 # Azure Firewall Network/Application/NAT Rules 
 #----------------------------------------------
@@ -183,3 +189,4 @@ resource "azurerm_monitor_diagnostic_setting" "fw-diag" {
     }
   }
 }
+ */

@@ -3,22 +3,33 @@ provider "azurerm" {
   features {}
 }
 
-module "container-registry" {
-  source  = "kumarvna/container-registry/azurerm"
-  version = "1.0.0"
+module "firewall" {
+  //  source  = "kumarvna/firewall/azurerm"
+  //  version = "1.0.0"
+  source = "../../"
 
   # By default, this module will not create a resource group. Location will be same as existing RG.
   # proivde a name to use an existing resource group, specify the existing resource group name, 
   # set the argument to `create_resource_group = true` to create new resrouce group.
-  resource_group_name = "rg-shared-westeurope-01"
-  location            = "westeurope"
+  resource_group_name            = "rg-shared-westeurope-01"
+  location                       = "westeurope"
+  virtual_network_name           = "vnet-shared-hub-westeurope-001"
+  firewall_subnet_address_prefix = ["10.1.5.0/26"]
 
+  firewall_config = {
+    name              = "testfirewall1"
+    zones             = [1, 2, 3]
+    dns_servers       = ["8.8.8.8"]
+    private_ip_ranges = ["IANAPrivateRanges"]
+  }
+
+  public_ip_names = ["fw-public", "fw-private"]
 
   # (Optional) To enable the availability zones for firewall. 
   # Availability Zones can only be configured during deployment 
   # You can't modify an existing firewall to include Availability Zones
-  firewall_zones = [1, 2, 3]
-
+  #firewall_zones = [1, 2, 3]
+  /* 
   # (Optional) specify the application rules for Azure Firewall
   firewall_application_rules = [
     {
@@ -60,7 +71,7 @@ module "container-registry" {
       protocols             = ["TCP", "UDP", ]
     },
   ]
-
+ */
   # (Optional) To enable Azure Monitoring for Azure MySQL database
   # (Optional) Specify `storage_account_name` to save monitoring logs to storage. 
   # log_analytics_workspace_name = "loganalytics-we-sharedtest2"

@@ -1,6 +1,6 @@
 variable "create_resource_group" {
   description = "Whether to create resource group and use it for all networking resources"
-  default     = true
+  default     = false
 }
 
 variable "resource_group_name" {
@@ -13,6 +13,31 @@ variable "location" {
   default     = ""
 }
 
+variable "virtual_network_name" {
+  description = "Name of your Azure Virtual Network"
+  default     = ""
+}
+
+variable "firewall_subnet_address_prefix" {
+  description = "The address prefix to use for the Firewall subnet.The Subnet used for the Firewall must have the name AzureFirewallSubnet and the subnet mask must be at least a /26."
+  default     = []
+}
+
+variable "firewall_management_subnet_address_prefix" {
+  description = "The address prefix to use for Firewall managemement subnet to enable forced tunnelling. The Subnet used for the Firewall must have the name AzureFirewallSubnet and the subnet mask must be at least a /26."
+  default     = null
+}
+
+variable "public_ip_prefix_length" {
+  description = "Specifies the number of bits of the prefix. The value can be set between 0 (4,294,967,296 addresses) and 31 (2 addresses)."
+  default     = 31
+}
+
+variable "public_ip_names" {
+  description = "Public ips is a list of ip names that are connected to the firewall. At least one is required."
+  type        = list(string)
+  default     = ["fw-public"]
+}
 
 variable "firewall_service_endpoints" {
   description = "Service endpoints to add to the firewall subnet"
@@ -28,26 +53,17 @@ variable "firewall_service_endpoints" {
   ]
 }
 
-variable "public_ip_names" {
-  description = "Public ips is a list of ip names that are connected to the firewall. At least one is required."
-  type        = list(string)
-  default     = ["fw-public"]
-}
-
-variable "gateway_subnet_address_prefix" {
-  description = "The address prefix to use for the gateway subnet"
-  default     = null
-}
-
-variable "firewall_subnet_address_prefix" {
-  description = "The address prefix to use for the Firewall subnet"
-  default     = []
-}
-
-variable "firewall_zones" {
-  description = "A collection of availability zones to spread the Firewall over"
-  type        = list(string)
-  default     = null
+variable "firewall_config" {
+  description = "Manages an Azure Firewall configuration"
+  type = object({
+    name              = string
+    sku_name          = optional(string)
+    sku_tier          = optional(string)
+    dns_servers       = optional(list(string))
+    private_ip_ranges = optional(list(string))
+    threat_intel_mode = optional(string)
+    zones             = optional(list(string))
+  })
 }
 
 variable "firewall_application_rules" {
