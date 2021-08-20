@@ -32,7 +32,7 @@ module "firewall" {
   enable_forced_tunneling                   = true
   firewall_management_subnet_address_prefix = ["10.1.6.0/26"]
 
-  # Optionally add more public IP's to firewall by specifing the list of names
+  # Optionally add more public IP's to firewall by specifing the list of names. Minimum one IP name required.
   # Depends on firewall public IP prefix which can be adjusted by `public_ip_prefix_length` variable.
   # IP prefix Default to 31 i.e. for 2 public IP addresses.   
   public_ip_names = ["fw-public", "fw-private"]

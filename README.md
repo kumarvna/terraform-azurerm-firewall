@@ -229,7 +229,7 @@ Name | Description | Type | Default
 `firewall_management_subnet_address_prefix`|The address prefix to use for Firewall managemement subnet to enable forced tunnelling. The Management Subnet used for the Firewall must have the name `AzureFirewallManagementSubnet` and the subnet mask must be at least a `/26`.
 `public_ip_prefix_length`|Specifies the number of bits of the prefix. The value can be set between `0` (4,294,967,296 addresses) and `31` (2 addresses).|number|`31`
 `public_ip_names`|Public ips is a list of ip names that are connected to the firewall. At least one is required|list|`["fw-public"]`
-firewall_service_endpoints|Service endpoints to add to the firewall subnet|list|`["Microsoft.AzureActiveDirectory", "Microsoft.AzureCosmosDB", "Microsoft.EventHub",  "Microsoft.KeyVault", "Microsoft.ServiceBus", "Microsoft.Sql", "Microsoft.Storage",]`
+`firewall_service_endpoints`|Service endpoints to add to the firewall subnet|list|`["Microsoft.AzureActiveDirectory", "Microsoft.AzureCosmosDB", "Microsoft.EventHub",  "Microsoft.KeyVault", "Microsoft.ServiceBus", "Microsoft.Sql", "Microsoft.Storage",]`
 `firewall_config`|Manages an Azure Firewall configuration|object|`{}`
 `enable_forced_tunneling`|Route all Internet-bound traffic to a designated next hop instead of going directly to the Internet|string|`false`
 `virtual_hub`|Microsoft-managed virtual network that enables connectivity from other resources.|object|`null`
