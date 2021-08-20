@@ -1,3 +1,10 @@
+# Azure Firewall Terraform Module
+
+Terraform module to create managed, cloud-based network security service Azure Firewall with network, NAT, Application rule collections and other optional features.
+
+## Module Usage
+
+```terraform
 # Azurerm Provider configuration
 provider "azurerm" {
   features {}
@@ -92,3 +99,16 @@ module "firewall" {
     ServiceClass = "Gold"
   }
 }
+```
+
+## Terraform Usage
+
+To run this example you need to execute following Terraform commands
+
+```hcl
+terraform init
+terraform plan
+terraform apply
+```
+
+Run `terraform destroy` when you don't need these resources.
