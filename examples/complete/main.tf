@@ -11,27 +11,30 @@ module "firewall" {
   # By default, this module will not create a resource group. Location will be same as existing RG.
   # proivde a name to use an existing resource group, specify the existing resource group name, 
   # set the argument to `create_resource_group = true` to create new resrouce group.
+  # The Subnet used for the Firewall must have the name `AzureFirewallSubnet` and the subnet mask must be at least a /26
+  # Availability Zones can only be configured during deployment. Can't modify an existing firewall to include Availability Zones
   resource_group_name            = "rg-shared-westeurope-01"
   location                       = "westeurope"
   virtual_network_name           = "vnet-shared-hub-westeurope-001"
   firewall_subnet_address_prefix = ["10.1.5.0/26"]
 
+  # Azure firewall general configuration 
+  # If `virtual_hub` is specified, the threat_intel_mode has to be explicitly set as `""`
   firewall_config = {
     name              = "testfirewall1"
-    zones             = [1, 2, 3]
-    dns_servers       = ["8.8.8.8"]
+    sku_tier          = "Standard"
     private_ip_ranges = ["IANAPrivateRanges"]
+    threat_intel_mode = "Alert"
+    zones             = [1, 2, 3]
   }
 
+  # Allow force-tunnelling of traffic to be performed by the firewall
+  # The Management Subnet used for the Firewall must have the name `AzureFirewallManagementSubnet` 
+  # and the subnet mask must be at least a /26.
   enable_forced_tunneling                   = true
   firewall_management_subnet_address_prefix = ["10.1.6.0/26"]
 
   public_ip_names = ["fw-public", "fw-private"]
-
-  # (Optional) To enable the availability zones for firewall. 
-  # Availability Zones can only be configured during deployment 
-  # You can't modify an existing firewall to include Availability Zones
-  #firewall_zones = [1, 2, 3]
 
   # (Optional) specify the application rules for Azure Firewall
   firewall_application_rules = [

@@ -115,7 +115,7 @@ resource "azurerm_firewall" "fw" {
   location            = local.location
   sku_name            = var.firewall_config.sku_name
   sku_tier            = var.firewall_config.sku_tier
-  # firewall_policy_id = # firewall_policy resoruce to be added
+  # firewall_policy_id  = var.firewall_policy != null ? azurerm_firewall_policy.fw-policy.0.id : null
   dns_servers       = var.firewall_config.dns_servers
   private_ip_ranges = var.firewall_config.private_ip_ranges
   threat_intel_mode = lookup(var.firewall_config, "threat_intel_mode", "Alert")
@@ -150,6 +150,7 @@ resource "azurerm_firewall" "fw" {
   }
 }
 
+
 #----------------------------------------------
 # Azure Firewall Network/Application/NAT Rules 
 #----------------------------------------------
@@ -175,6 +176,7 @@ resource "azurerm_firewall_application_rule_collection" "fw_app" {
     }
   }
 }
+
 
 resource "azurerm_firewall_network_rule_collection" "fw" {
   for_each            = local.fw_network_rules
@@ -214,7 +216,36 @@ resource "azurerm_firewall_nat_rule_collection" "fw" {
     translated_port       = each.value.rule.translated_port
   }
 }
+/* 
+#---------------------------------------------------------------
+# Azure Firewall Policy
+#---------------------------------------------------------------
+resource "azurerm_firewall_policy" "fw-policy" {
+  count                    = var.firewall_policy != null ? 1 : 0
+  name                     = lower(format("fw-policy-%s", var.firewall_config.name))
+  resource_group_name      = local.resource_group_name
+  location                 = local.location
+  sku                      = var.firewall_policy.sku
+  base_policy_id           = var.firewall_policy.base_policy_id
+  threat_intelligence_mode = lookup(var.firewall_policy, "threat_intelligence_mode", "Alert")
 
+  dynamic "dns" {
+    for_each = var.firewall_policy.dns != null ? [var.firewall_policy.dns] : []
+    content {
+      servers       = dns.value.servers
+      proxy_enabled = dns.value.proxy_enabled
+    }
+  }
+
+  dynamic "threat_intelligence_allowlist" {
+    for_each = var.firewall_policy.threat_intelligence_allowlist != null ? [var.firewall_policy.threat_intelligence_allowlist] : []
+    content {
+      ip_addresses = threat_intelligence_allowlist.value.ip_addresses
+      fqdns        = threat_intelligence_allowlist.value.fqdns
+    }
+  }
+}
+ */
 #---------------------------------------------------------------
 # azurerm monitoring diagnostics - Firewall and Public IP's
 #---------------------------------------------------------------

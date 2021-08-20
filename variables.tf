@@ -129,6 +129,26 @@ variable "firewall_nat_rules" {
   default = []
 }
 
+/* 
+variable "firewall_policy" {
+  description = "Manages a Firewall Policy resource that contains NAT, network, and application rule collections, and Threat Intelligence settings"
+  type = object({
+    sku                      = optional(string)
+    base_policy_id           = optional(string)
+    threat_intelligence_mode = optional(string)
+    dns = optional(object({
+      servers       = list(string)
+      proxy_enabled = bool
+    }))
+    threat_intelligence_allowlist = optional(object({
+      ip_addresses = list(string)
+      fqdns        = list(string)
+    }))
+  })
+  default = null
+}
+ */
+
 variable "fw_pip_diag_logs" {
   description = "Firewall Public IP Monitoring Category details for Azure Diagnostic setting"
   default     = ["DDoSProtectionNotifications", "DDoSMitigationFlowLogs", "DDoSMitigationReports"]
