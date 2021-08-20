@@ -24,7 +24,7 @@ variable "firewall_subnet_address_prefix" {
 }
 
 variable "firewall_management_subnet_address_prefix" {
-  description = "The address prefix to use for Firewall managemement subnet to enable forced tunnelling. The Subnet used for the Firewall must have the name AzureFirewallSubnet and the subnet mask must be at least a /26."
+  description = "The address prefix to use for Firewall managemement subnet to enable forced tunnelling. The Management Subnet used for the Firewall must have the name `AzureFirewallManagementSubnet` and the subnet mask must be at least a `/26`."
   default     = null
 }
 
@@ -81,7 +81,7 @@ variable "virtual_hub" {
 }
 
 variable "firewall_application_rules" {
-  description = "List of application rules to apply to firewall."
+  description = "Microsoft-managed virtual network that enables connectivity from other resources."
   type = list(object({
     name             = string
     description      = optional(string)

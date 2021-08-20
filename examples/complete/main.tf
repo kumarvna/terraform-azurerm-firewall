@@ -10,8 +10,7 @@ module "firewall" {
   # By default, this module will not create a resource group. Location will be same as existing RG.
   # proivde a name to use an existing resource group, specify the existing resource group name, 
   # set the argument to `create_resource_group = true` to create new resrouce group.
-  # The Subnet used for the Firewall must have the name `AzureFirewallSubnet` and the subnet mask must be at least a /26
-  # Availability Zones can only be configured during deployment. Can't modify an existing firewall to include Availability Zones
+  #   # The Subnet must have the name `AzureFirewallSubnet` and the subnet mask must be at least a /26
   resource_group_name            = "rg-shared-westeurope-01"
   location                       = "westeurope"
   virtual_network_name           = "vnet-shared-hub-westeurope-001"
