@@ -5,7 +5,7 @@ provider "azurerm" {
 
 module "firewall" {
   source  = "kumarvna/firewall/azurerm"
-  version = "1.0.0"
+  version = "1.1.0"
 
   # By default, this module will not create a resource group. Location will be same as existing RG.
   # proivde a name to use an existing resource group, specify the existing resource group name, 
@@ -20,10 +20,10 @@ module "firewall" {
   # If `virtual_hub` is specified, the threat_intel_mode has to be explicitly set as `""`
   firewall_config = {
     name              = "testfirewall1"
+    sku_name          = "AZFW_VNet"
     sku_tier          = "Standard"
     private_ip_ranges = ["IANAPrivateRanges"]
     threat_intel_mode = "Alert"
-    zones             = [1, 2, 3]
   }
 
   # Allow force-tunnelling of traffic to be performed by the firewall
