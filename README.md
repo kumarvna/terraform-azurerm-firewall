@@ -24,12 +24,12 @@ provider "azurerm" {
 
 module "firewall" {
   source  = "kumarvna/firewall/azurerm"
-  version = "1.0.0"
+  version = "1.1.0"
 
   # By default, this module will not create a resource group. Location will be same as existing RG.
   # proivde a name to use an existing resource group, specify the existing resource group name, 
   # set the argument to `create_resource_group = true` to create new resrouce group.
-  # The Subnet must have the name `AzureFirewallSubnet` and the subnet mask must be at least a /26
+  #   # The Subnet must have the name `AzureFirewallSubnet` and the subnet mask must be at least a /26
   resource_group_name            = "rg-shared-westeurope-01"
   location                       = "westeurope"
   virtual_network_name           = "vnet-shared-hub-westeurope-001"
@@ -39,10 +39,10 @@ module "firewall" {
   # If `virtual_hub` is specified, the threat_intel_mode has to be explicitly set as `""`
   firewall_config = {
     name              = "testfirewall1"
+    sku_name          = "AZFW_VNet"
     sku_tier          = "Standard"
     private_ip_ranges = ["IANAPrivateRanges"]
     threat_intel_mode = "Alert"
-    zones             = [1, 2, 3]
   }
 
   # Allow force-tunnelling of traffic to be performed by the firewall
@@ -51,7 +51,7 @@ module "firewall" {
   enable_forced_tunneling                   = true
   firewall_management_subnet_address_prefix = ["10.1.6.0/26"]
 
-  # Optionally add more public IP's to firewall by specifing the list of names
+  # Optionally add more public IP's to firewall by specifing the list of names. Minimum one IP name required.
   # Depends on firewall public IP prefix which can be adjusted by `public_ip_prefix_length` variable.
   # IP prefix Default to 31 i.e. for 2 public IP addresses.   
   public_ip_names = ["fw-public", "fw-private"]
@@ -140,9 +140,9 @@ This module centrally create allow or deny network filtering rules by source and
 To define the firewall rules, use the input variables `firewall_application_rules`, `firewall_network_rules` and `firewall_nat_rules`.
 
 ``` hcl
-module "vnet-hub" {
-  source  = "kumarvna/caf-virtual-network-hub/azurerm"
-  version = "2.1.0"
+module "firewall" {
+  source  = "kumarvna/firewall/azurerm"
+  version = "1.1.0"
 
 # ....omitted
 
@@ -205,14 +205,14 @@ An effective naming convention assembles resource names by using important resou
 
 | Name | Version |
 |------|---------|
-| terraform | >= 0.13 |
-| azurerm | >= 2.59.0 |
+| terraform | >= 1.1.9 |
+| azurerm | >= 3.28.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| azurerm | >= 2.59.0 |
+| azurerm | >= 3.28.0 |
 | random |>= 3.1.0 |
 
 ## Inputs
