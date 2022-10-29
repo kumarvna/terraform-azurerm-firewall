@@ -160,7 +160,7 @@ variable "fw_diag_logs" {
 }
 
 variable "log_analytics_workspace_id" {
-  description = "The name of log analytics workspace resource id"
+  description = "The resource id of log analytics workspace"
   default     = null
 }
 
