@@ -3,6 +3,11 @@ provider "azurerm" {
   features {}
 }
 
+data "azurerm_log_analytics_workspace" "example" {
+  name                = "loganalytics-we-sharedtest2"
+  resource_group_name = "rg-shared-westeurope-01"
+}
+
 module "firewall" {
   source  = "kumarvna/firewall/azurerm"
   version = "1.1.0"
@@ -78,9 +83,9 @@ module "firewall" {
     },
   ]
 
-  # (Optional) To enable Azure Monitoring for Azure MySQL database
-  # (Optional) Specify `storage_account_name` to save monitoring logs to storage. 
-  log_analytics_workspace_name = "loganalytics-we-sharedtest2"
+  # (Optional) To enable Azure Monitoring and diagnostics to firewall and public ip's
+  # (Optional) Specify `storage_account_name` to save monitoring logs to storage.   
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.example.id
 
   # Adding TAG's to your Azure resources 
   tags = {

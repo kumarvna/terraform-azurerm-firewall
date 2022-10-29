@@ -22,6 +22,11 @@ provider "azurerm" {
   features {}
 }
 
+data "azurerm_log_analytics_workspace" "example" {
+  name                = "loganalytics-we-sharedtest2"
+  resource_group_name = "rg-shared-westeurope-01"
+}
+
 module "firewall" {
   source  = "kumarvna/firewall/azurerm"
   version = "1.1.0"
@@ -97,9 +102,9 @@ module "firewall" {
     },
   ]
 
-  # (Optional) To enable Azure Monitoring for Azure MySQL database
-  # (Optional) Specify `storage_account_name` to save monitoring logs to storage. 
-  log_analytics_workspace_name = "loganalytics-we-sharedtest2"
+  # (Optional) To enable Azure Monitoring and diagnostics to firewall and public ip's
+  # (Optional) Specify `storage_account_name` to save monitoring logs to storage.   
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.example.id
 
   # Adding TAG's to your Azure resources 
   tags = {
@@ -223,10 +228,8 @@ Name | Description | Type | Default
 `resource_group_name`|The name of an existing resource group.|string|`""`
 `location`|The location for all resources while creating a new resource group.|string|`""`
 `virtual_network_name`|The name of the virtual network|string|`""`
-`storage_account_name`|The name of the storage account name|string|`null`
-`log_analytics_workspace_name`|The name of log analytics workspace name|string|`null`
 `firewall_subnet_address_prefix`|The address prefix to use for the Firewall subnet.The Subnet used for the Firewall must have the name `AzureFirewallSubnet` and the subnet mask must be at least a `/26`.|list|`[]`
-`firewall_management_subnet_address_prefix`|The address prefix to use for Firewall managemement subnet to enable forced tunnelling. The Management Subnet used for the Firewall must have the name `AzureFirewallManagementSubnet` and the subnet mask must be at least a `/26`.
+`firewall_management_subnet_address_prefix`|The address prefix to use for Firewall managemement subnet to enable forced tunnelling. The Management Subnet used for the Firewall must have the name `AzureFirewallManagementSubnet` and the subnet mask must be at least a `/26`.|list|`[]`
 `public_ip_prefix_length`|Specifies the number of bits of the prefix. The value can be set between `0` (4,294,967,296 addresses) and `31` (2 addresses).|number|`31`
 `public_ip_names`|Public ips is a list of ip names that are connected to the firewall. At least one is required|list|`["fw-public"]`
 `firewall_service_endpoints`|Service endpoints to add to the firewall subnet|list|`["Microsoft.AzureActiveDirectory", "Microsoft.AzureCosmosDB", "Microsoft.EventHub",  "Microsoft.KeyVault", "Microsoft.ServiceBus", "Microsoft.Sql", "Microsoft.Storage",]`
@@ -236,6 +239,8 @@ Name | Description | Type | Default
 `firewall_application_rules`|Microsoft-managed virtual network that enables connectivity from other resources.|list(object)|`[]`
 `firewall_network_rules`|List of network rules to apply to firewall.|list(object)|`[]`
 `firewall_nat_rules`|List of nat rules to apply to firewall|list(object)|`[]`
+`storage_account_name`|The name of the storage account name|string|`null`
+`log_analytics_workspace_id`|The resource id of log analytics workspace|string|`null`
 `Tags`|A map of tags to add to all resources|map|`{}`
 
 ## Outputs

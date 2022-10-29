@@ -159,8 +159,8 @@ variable "fw_diag_logs" {
   default     = ["AzureFirewallApplicationRule", "AzureFirewallNetworkRule", "AzureFirewallDnsProxy"]
 }
 
-variable "log_analytics_workspace_name" {
-  description = "The name of log analytics workspace name"
+variable "log_analytics_workspace_id" {
+  description = "The resource id of log analytics workspace"
   default     = null
 }
 

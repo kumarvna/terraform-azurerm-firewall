@@ -40,12 +40,6 @@ resource "azurerm_resource_group" "rg" {
   tags     = merge({ "ResourceName" = format("%s", var.resource_group_name) }, var.tags, )
 }
 
-data "azurerm_log_analytics_workspace" "logws" {
-  count               = var.log_analytics_workspace_name != null ? 1 : 0
-  name                = var.log_analytics_workspace_name
-  resource_group_name = local.resource_group_name
-}
-
 data "azurerm_storage_account" "storeacc" {
   count               = var.storage_account_name != null ? 1 : 0
   name                = var.storage_account_name
@@ -250,11 +244,11 @@ resource "azurerm_firewall_policy" "fw-policy" {
 # azurerm monitoring diagnostics - Firewall and Public IP's
 #---------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "fw-mgnt-pip-diag" {
-  count                      = var.log_analytics_workspace_name != null || var.storage_account_name != null && var.enable_forced_tunneling ? 1 : 0
+  count                      = var.log_analytics_workspace_id != null || var.storage_account_name != null && var.enable_forced_tunneling ? 1 : 0
   name                       = lower("fw-${var.firewall_config.name}-mgnt-pip-diag")
   target_resource_id         = azurerm_public_ip.fw-mgnt-pip.0.id
   storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
-  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   dynamic "log" {
     for_each = var.fw_pip_diag_logs
@@ -284,11 +278,11 @@ resource "azurerm_monitor_diagnostic_setting" "fw-mgnt-pip-diag" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "fw-pip-diag" {
-  for_each                   = { for pip in var.public_ip_names : pip => true if var.log_analytics_workspace_name != null || var.storage_account_name != null }
+  for_each                   = { for pip in var.public_ip_names : pip => true if var.log_analytics_workspace_id != null || var.storage_account_name != null }
   name                       = lower("fw-${var.firewall_config.name}-${each.key}-pip-diag")
   target_resource_id         = azurerm_public_ip.fw-pip[each.key].id
   storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
-  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   dynamic "log" {
     for_each = var.fw_pip_diag_logs
@@ -318,11 +312,11 @@ resource "azurerm_monitor_diagnostic_setting" "fw-pip-diag" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "fw-diag" {
-  count                      = var.log_analytics_workspace_name != null || var.storage_account_name != null ? 1 : 0
+  count                      = var.log_analytics_workspace_id != null || var.storage_account_name != null ? 1 : 0
   name                       = lower("${var.firewall_config.name}-diag")
   target_resource_id         = azurerm_firewall.fw.id
   storage_account_id         = var.storage_account_name != null ? data.azurerm_storage_account.storeacc.0.id : null
-  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   dynamic "log" {
     for_each = var.fw_diag_logs
